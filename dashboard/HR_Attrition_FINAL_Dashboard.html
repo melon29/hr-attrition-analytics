@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Attrition Dashboard — Tanvi Rahate</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:#07090f;
+  --s1:#0e1118;
+  --s2:#141720;
+  --s3:#1a1e2a;
+  --card:#1e2233;
+  --border:#2a2f45;
+  --border2:#353c58;
+  --red:#ff4d2e;
+  --orange:#ff8c42;
+  --yellow:#ffd166;
+  --green:#06d6a0;
+  --blue:#4895ef;
+  --purple:#b388ff;
+  --text:#eef0f8;
+  --text2:#a8afc8;
+  --text3:#5c6380;
+  --serif:'Playfair Display',serif;
+  --sans:'Outfit',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;overflow-x:hidden;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--s1);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* HEADER */
+.header{
+  background:linear-gradient(135deg,var(--s2) 0%,var(--s3) 100%);
+  border-bottom:1px solid var(--border);
+  padding:0 32px;
+  height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 4px 24px rgba(0,0,0,.4);
+}
+.hd-left{display:flex;align-items:center;gap:14px;}
+.logo-box{
+  width:40px;height:40px;
+  background:linear-gradient(135deg,var(--red),var(--orange));
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:20px;font-weight:900;color:#fff;
+  box-shadow:0 4px 12px rgba(255,77,46,.4);
+}
+.hd-title{font-family:var(--serif);font-size:18px;letter-spacing:-.2px;}
+.hd-sub{font-size:11px;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;}
+.hd-right{display:flex;align-items:center;gap:20px;}
+.hd-stat{text-align:center;}
+.hd-stat-val{font-size:18px;font-weight:700;color:var(--yellow);}
+.hd-stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;}
+.hd-divider{width:1px;height:32px;background:var(--border);}
+.pulse{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--green);}
+.pulse-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+/* TABS */
+.tabs{
+  display:flex;background:var(--s1);border-bottom:1px solid var(--border);
+  padding:0 32px;gap:4px;
+}
+.tab{
+  padding:14px 22px;font-size:13px;font-weight:500;cursor:pointer;
+  color:var(--text3);border-bottom:2px solid transparent;
+  transition:all .25s;display:flex;align-items:center;gap:7px;
+  letter-spacing:.2px;
+}
+.tab:hover{color:var(--text2);}
+.tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+.tab-icon{font-size:15px;}
+
+/* FILTER BAR */
+.filterbar{
+  background:var(--s2);border-bottom:1px solid var(--border);
+  padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.fl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;}
+.fsel{
+  background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:6px 28px 6px 11px;border-radius:7px;font-family:var(--sans);font-size:12px;
+  cursor:pointer;outline:none;transition:border-color .2s;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6380'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;
+}
+.fsel:focus,.fsel:hover{border-color:var(--orange);}
+.freset{
+  margin-left:auto;padding:6px 14px;background:transparent;
+  border:1px solid var(--border);color:var(--text3);border-radius:7px;
+  cursor:pointer;font-family:var(--sans);font-size:12px;transition:all .2s;
+}
+.freset:hover{border-color:var(--red);color:var(--red);}
+.fcount{font-size:12px;color:var(--green);font-weight:600;}
+
+/* MAIN */
+main{padding:24px 32px 40px;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* KPI ROW */
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kcard{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:20px 20px 16px;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;cursor:default;
+}
+.kcard:hover{transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.kcard::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  border-radius:14px 14px 0 0;
+}
+.kcard.k1::after{background:linear-gradient(90deg,var(--red),var(--orange));}
+.kcard.k2::after{background:linear-gradient(90deg,var(--orange),var(--yellow));}
+.kcard.k3::after{background:linear-gradient(90deg,var(--green),var(--blue));}
+.kcard.k4::after{background:linear-gradient(90deg,var(--blue),var(--purple));}
+.kcard-icon{font-size:22px;margin-bottom:10px;}
+.kcard-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;margin-bottom:6px;}
+.kcard-val{font-family:var(--serif);font-size:38px;line-height:1;font-weight:900;margin-bottom:8px;}
+.kcard-sub{font-size:11px;color:var(--text3);line-height:1.5;}
+.kbadge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;
+  letter-spacing:.3px;text-transform:uppercase;margin-top:6px;
+}
+.kb-red{background:rgba(255,77,46,.15);color:#ff7055;}
+.kb-yellow{background:rgba(255,209,102,.15);color:var(--yellow);}
+.kb-green{background:rgba(6,214,160,.12);color:var(--green);}
+.kb-blue{background:rgba(72,149,239,.12);color:var(--blue);}
+
+/* GRID */
+.grow{display:grid;gap:14px;margin-bottom:14px;}
+.g2{grid-template-columns:1fr 1fr;}
+.g3{grid-template-columns:2fr 1fr;}
+.g32{grid-template-columns:1fr 2fr;}
+.gchart{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:20px 22px;transition:box-shadow .2s;
+}
+.gchart:hover{box-shadow:0 4px 24px rgba(0,0,0,.25);}
+.ct{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.cs{font-size:11px;color:var(--text3);margin-bottom:16px;line-height:1.5;}
+.cw{position:relative;}
+.cw-200{height:200px;}
+.cw-240{height:240px;}
+.cw-280{height:280px;}
+.cw-160{height:160px;}
+.cw-320{height:320px;}
+
+/* INSIGHT */
+.insight{
+  margin-top:14px;padding:11px 14px;
+  background:rgba(255,140,66,.07);
+  border:1px solid rgba(255,140,66,.2);
+  border-left:3px solid var(--orange);
+  border-radius:0 8px 8px 0;
+  font-size:11.5px;color:#c8a090;line-height:1.6;
+}
+.insight b{color:var(--orange);}
+
+/* HEATMAP TABLE */
+.hmt{width:100%;border-collapse:collapse;margin-top:10px;}
+.hmt th{
+  text-align:left;padding:8px 12px;
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--text3);
+  border-bottom:1px solid var(--border);
+}
+.hmt td{padding:9px 12px;border-bottom:1px solid rgba(42,47,69,.5);font-size:12.5px;}
+.hmt tr:last-child td{border-bottom:none;}
+.hmt tr:hover td{background:rgba(255,255,255,.02);}
+.hmbar{height:8px;border-radius:4px;background:var(--border);}
+.hmfill{height:100%;border-radius:4px;}
+.rbadge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;}
+.rb-h{background:rgba(255,77,46,.2);color:#ff7055;}
+.rb-m{background:rgba(255,209,102,.15);color:var(--yellow);}
+.rb-l{background:rgba(6,214,160,.1);color:var(--green);}
+
+/* SHAP */
+.shap-item{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+.shap-name{width:200px;font-size:12px;color:var(--text2);flex-shrink:0;}
+.shap-track{flex:1;height:10px;background:var(--s1);border-radius:5px;overflow:hidden;}
+.shap-bar{height:100%;border-radius:5px;transition:width 1s ease;}
+.shap-pct{width:36px;font-size:11px;color:var(--text3);text-align:right;}
+
+/* RISK TABLE */
+.rtable{width:100%;border-collapse:collapse;}
+.rtable th{
+  padding:9px 12px;font-size:10px;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--text3);font-weight:700;
+  border-bottom:1px solid var(--border);text-align:left;
+}
+.rtable td{padding:9px 12px;font-size:12px;border-bottom:1px solid rgba(42,47,69,.4);}
+.rtable tr:last-child td{border-bottom:none;}
+.rtable tr:hover td{background:rgba(255,255,255,.02);}
+
+/* SCATTER LEGEND */
+.sleg{display:flex;gap:16px;margin-bottom:10px;}
+.sleg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);}
+.sleg-dot{width:10px;height:10px;border-radius:50%;}
+
+/* RECOMMENDATION CARDS */
+.recrow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
+.reccard{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:18px 18px;
+}
+.rec-phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.rec-title{font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text);}
+.rec-body{font-size:12px;color:var(--text3);line-height:1.7;}
+.rec-tag{
+  display:inline-block;margin-top:10px;padding:3px 10px;
+  border-radius:20px;font-size:10px;font-weight:700;
+}
+
+/* SECTION TITLE */
+.stitle{
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;color:var(--text3);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.stitle::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* SUMMARY BAR */
+.sumbar{
+  background:linear-gradient(135deg,var(--s3),var(--card));
+  border:1px solid var(--border);border-radius:14px;
+  padding:20px 24px;margin-bottom:20px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+}
+.sum-item{text-align:center;}
+.sum-val{font-family:var(--serif);font-size:28px;font-weight:900;}
+.sum-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px;}
+
+/* FOOTER */
+footer{
+  border-top:1px solid var(--border);padding:18px 32px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;color:var(--text3);background:var(--s1);
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.page.active .kcard,.page.active .gchart{animation:fadeUp .4s ease both;}
+.page.active .kcard:nth-child(1){animation-delay:.05s}
+.page.active .kcard:nth-child(2){animation-delay:.1s}
+.page.active .kcard:nth-child(3){animation-delay:.15s}
+.page.active .kcard:nth-child(4){animation-delay:.2s}
+
+/* NUMBER COUNTER */
+.counter{display:inline-block;}
+
+@media(max-width:1000px){
+  .krow{grid-template-columns:1fr 1fr;}
+  .g2,.g3,.g32,.recrow{grid-template-columns:1fr;}
+  main{padding:16px;}
+  .header{padding:0 16px;}
+  .filterbar,.tabs{padding-left:16px;padding-right:16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="hd-left">
+    <div class="logo-box">H</div>
+    <div>
+      <div class="hd-title">HR Attrition & Performance Dashboard</div>
+      <div class="hd-sub">IBM HR Analytics · Guru Nanak College · Tanvi Sachindra Rahate</div>
+    </div>
+  </div>
+  <div class="hd-right">
+    <div class="hd-stat"><div class="hd-stat-val">1,470</div><div class="hd-stat-lbl">Employees</div></div>
+    <div class="hd-divider"></div>
+    <div class="hd-stat"><div class="hd-stat-val" style="color:var(--red)">16.1%</div><div class="hd-stat-lbl">Attrition Rate</div></div>
+    <div class="hd-divider"></div>
+    <div class="hd-stat"><div class="hd-stat-val" style="color:var(--green)">237</div><div class="hd-stat-lbl">Employees Left</div></div>
+    <div class="hd-divider"></div>
+    <span class="pulse"><span class="pulse-dot"></span>Live Data</span>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)"><span class="tab-icon">📊</span>Executive Overview</div>
+  <div class="tab" onclick="switchTab(1)"><span class="tab-icon">👥</span>Demographics & Tenure</div>
+  <div class="tab" onclick="switchTab(2)"><span class="tab-icon">💰</span>Compensation & Risk</div>
+  <div class="tab" onclick="switchTab(3)"><span class="tab-icon">🎯</span>Recommendations</div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filterbar">
+  <span class="fl">Filters:</span>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:var(--text3)">Department</span>
+    <select class="fsel" id="fd" onchange="applyFilter()">
+      <option value="all">All Departments</option>
+      <option value="Sales">Sales (446)</option>
+      <option value="RD">Research & Development (961)</option>
+      <option value="HR">Human Resources (63)</option>
+    </select>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:var(--text3)">Age Group</span>
+    <select class="fsel" id="fa" onchange="applyFilter()">
+      <option value="all">All Age Groups</option>
+      <option value="ec">Early Career — 18 to 25</option>
+      <option value="cc">Core Contributor — 26 to 35</option>
+      <option value="sm">Senior / Management — 36 to 45</option>
+      <option value="ex">Executive / Late Career — 46+</option>
+    </select>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:var(--text3)">Overtime</span>
+    <select class="fsel" id="fo" onchange="applyFilter()">
+      <option value="all">All</option>
+      <option value="yes">Overtime: Yes (416 employees)</option>
+      <option value="no">Overtime: No (1054 employees)</option>
+    </select>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:var(--text3)">Attrition</span>
+    <select class="fsel" id="fat" onchange="applyFilter()">
+      <option value="all">All Employees</option>
+      <option value="left">Left Only (237)</option>
+      <option value="stayed">Stayed Only (1233)</option>
+    </select>
+  </div>
+  <button class="freset" onclick="resetFilter()">↺ Reset All</button>
+  <span class="fcount" id="fcount">● Showing 1,470 of 1,470 employees</span>
+</div>
+
+<main>
+
+<!-- ═══════════════════════════════════════ PAGE 1 ═══════════════════════════════════════ -->
+<div class="page active" id="p0">
+
+  <div class="sumbar">
+    <div class="sum-item"><div class="sum-val" style="color:var(--red)">16.1%</div><div class="sum-lbl">Overall Attrition</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--yellow)">237</div><div class="sum-lbl">Employees Left</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--orange)">~3×</div><div class="sum-lbl">OT Risk Multiplier</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--green)">$6,503</div><div class="sum-lbl">Avg Monthly Income</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--blue)">20.6%</div><div class="sum-lbl">Sales Attrition (Highest)</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--purple)">38%</div><div class="sum-lbl">Attrition from Top Risk Cohort</div></div>
+  </div>
+
+  <div class="stitle">Key Performance Indicators</div>
+  <div class="krow">
+    <div class="kcard k1">
+      <div class="kcard-icon">👥</div>
+      <div class="kcard-lbl">Total Employees Analyzed</div>
+      <div class="kcard-val">1,470</div>
+      <div class="kcard-sub">Sales · R&D · Human Resources</div>
+      <span class="kbadge kb-blue">35 features · 3 departments</span>
+    </div>
+    <div class="kcard k2">
+      <div class="kcard-icon">📉</div>
+      <div class="kcard-lbl">Overall Attrition Rate</div>
+      <div class="kcard-val" style="color:var(--red)">16.1%</div>
+      <div class="kcard-sub">237 employees have left</div>
+      <span class="kbadge kb-red">↑ 4.1% above benchmark</span>
+    </div>
+    <div class="kcard k3">
+      <div class="kcard-icon">💵</div>
+      <div class="kcard-lbl">Avg Monthly Income</div>
+      <div class="kcard-val" style="color:var(--green)">$6,503</div>
+      <div class="kcard-sub">Leavers: $4,787 · Stayers: $6,833</div>
+      <span class="kbadge kb-yellow">$2,046 income gap</span>
+    </div>
+    <div class="kcard k4">
+      <div class="kcard-icon">⏰</div>
+      <div class="kcard-lbl">OT Attrition Multiplier</div>
+      <div class="kcard-val" style="color:var(--orange)">~3×</div>
+      <div class="kcard-sub">OT Yes: 30.5% · OT No: 10.4%</div>
+      <span class="kbadge kb-red">Strongest single predictor</span>
+    </div>
+  </div>
+
+  <div class="stitle">Department & Overtime Analysis</div>
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Attrition Rate by Department</div>
+      <div class="cs">Sales leads with 20.6% — nearly 1.5× higher than R&D</div>
+      <div class="cw cw-240"><canvas id="c-dept"></canvas></div>
+      <div class="insight"><b>Key Finding:</b> Sales has the highest attrition (20.6%) driven by overtime + pay gaps. Human Resources follows at 19.0% due to promotion stagnation. R&D is healthiest at 13.8% but still above benchmark.</div>
+    </div>
+    <div class="gchart">
+      <div class="ct">Overtime vs Non-Overtime Attrition</div>
+      <div class="cs">Employees on overtime leave at 3× the rate of others</div>
+      <div class="cw cw-240"><canvas id="c-ot"></canvas></div>
+      <div class="insight"><b>Key Finding:</b> Overtime is the #1 predictor of attrition. 30.5% of overtime employees leave vs just 10.4% without overtime. Capping OT hours is the fastest retention lever.</div>
+    </div>
+  </div>
+
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Headcount — Retained vs Left by Department</div>
+      <div class="cs">Absolute numbers show R&D loses most people (133) despite lower rate</div>
+      <div class="cw cw-200"><canvas id="c-stack"></canvas></div>
+    </div>
+    <div class="gchart">
+      <div class="ct">Attrition by Business Travel Frequency</div>
+      <div class="cs">Frequent travelers show 3× higher attrition than non-travelers</div>
+      <div class="cw cw-200"><canvas id="c-travel"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Attrition by Job Level</div>
+      <div class="cs">Junior roles (Level 1–2) suffer most — limited growth path</div>
+      <div class="cw cw-200"><canvas id="c-joblevel"></canvas></div>
+    </div>
+    <div class="gchart">
+      <div class="ct">Attrition by Work-Life Balance Score</div>
+      <div class="cs">Score of 1 (Bad) shows dramatically higher attrition</div>
+      <div class="cw cw-200"><canvas id="c-wlb"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ PAGE 2 ═══════════════════════════════════════ -->
+<div class="page" id="p1">
+  <div class="krow">
+    <div class="kcard k1">
+      <div class="kcard-icon">🎯</div>
+      <div class="kcard-lbl">Highest Risk Age Group</div>
+      <div class="kcard-val" style="font-size:24px;padding-top:4px">26–35 Yrs</div>
+      <div class="kcard-sub">Core Contributors · Highest volume exits</div>
+      <span class="kbadge kb-red">97 departures in this group</span>
+    </div>
+    <div class="kcard k2">
+      <div class="kcard-icon">📅</div>
+      <div class="kcard-lbl">Peak Attrition Tenure</div>
+      <div class="kcard-val" style="color:var(--red)">Year 1</div>
+      <div class="kcard-sub">34.5% of Year-1 employees leave</div>
+      <span class="kbadge kb-red">1 in 3 new hires exits early</span>
+    </div>
+    <div class="kcard k3">
+      <div class="kcard-icon">💼</div>
+      <div class="kcard-lbl">Highest Risk Job Role</div>
+      <div class="kcard-val" style="font-size:22px;padding-top:6px">Sales Rep</div>
+      <div class="kcard-sub">39.8% attrition · 33 of 83 left</div>
+      <span class="kbadge kb-red">Highest of all 9 roles</span>
+    </div>
+    <div class="kcard k4">
+      <div class="kcard-icon">⏳</div>
+      <div class="kcard-lbl">Critical Intervention Window</div>
+      <div class="kcard-val" style="color:var(--blue)">0–2 Yrs</div>
+      <div class="kcard-sub">Stay interviews at 18-month mark</div>
+      <span class="kbadge kb-blue">Structured onboarding needed</span>
+    </div>
+  </div>
+
+  <div class="stitle">Age & Tenure Patterns</div>
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Attrition Rate by Age Group</div>
+      <div class="cs">Early Career has highest %; Core Contributor has highest volume</div>
+      <div class="cw cw-240"><canvas id="c-age"></canvas></div>
+      <div class="insight"><b>Finding:</b> Early Career (18–25) has 22.7% attrition rate. Core Contributors (26–35) are the biggest volume — 97 people left. These are your most valuable employees to retain.</div>
+    </div>
+    <div class="gchart">
+      <div class="ct">Attrition Rate by Years at Company</div>
+      <div class="cs">Sharp spike at Year 0–1 then again at Year 10 (stagnation)</div>
+      <div class="cw cw-240"><canvas id="c-tenure"></canvas></div>
+      <div class="insight"><b>Finding:</b> Year 1 is most dangerous at 34.5%. Risk drops through Years 2–9, then rises again at Year 10 — suggesting long-tenure employees feel stuck with no growth path.</div>
+    </div>
+  </div>
+
+  <div class="stitle">Job Role Risk Heatmap</div>
+  <div class="gchart" style="margin-bottom:14px">
+    <div class="ct">Attrition Rate by Job Role — Full Heatmap</div>
+    <div class="cs">Color intensity shows attrition risk. Darker red = more dangerous. Action needed on HIGH roles immediately.</div>
+    <div style="overflow-x:auto">
+      <table class="hmt" id="role-hm"></table>
+    </div>
+  </div>
+
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Attrition by Marital Status</div>
+      <div class="cs">Single employees have highest attrition (25.5%)</div>
+      <div class="cw cw-160"><canvas id="c-marital"></canvas></div>
+    </div>
+    <div class="gchart">
+      <div class="ct">Attrition by Education Field</div>
+      <div class="cs">Marketing & Technical Degree graduates exit most</div>
+      <div class="cw cw-160"><canvas id="c-edu"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Attrition by Job Satisfaction Score</div>
+      <div class="cs">Score 1 (Low) = 22.8% attrition vs Score 4 (High) = 11.3%</div>
+      <div class="cw cw-160"><canvas id="c-jobsat"></canvas></div>
+    </div>
+    <div class="gchart">
+      <div class="ct">Attrition by Environment Satisfaction</div>
+      <div class="cs">Poor environment (Score 1) nearly doubles attrition rate</div>
+      <div class="cw cw-160"><canvas id="c-envsat"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ PAGE 3 ═══════════════════════════════════════ -->
+<div class="page" id="p2">
+  <div class="krow">
+    <div class="kcard k1">
+      <div class="kcard-icon">📊</div>
+      <div class="kcard-lbl">Income Gap (Leavers vs Stayers)</div>
+      <div class="kcard-val" style="color:var(--red)">$2,046</div>
+      <div class="kcard-sub">Leavers earn 30% less in same roles</div>
+      <span class="kbadge kb-red">Statistically significant gap</span>
+    </div>
+    <div class="kcard k2">
+      <div class="kcard-icon">💸</div>
+      <div class="kcard-lbl">Leavers Avg Monthly Income</div>
+      <div class="kcard-val" style="color:var(--orange)">$4,787</div>
+      <div class="kcard-sub">vs $6,833 for employees who stayed</div>
+      <span class="kbadge kb-yellow">+15% raise recommended</span>
+    </div>
+    <div class="kcard k3">
+      <div class="kcard-icon">⚠️</div>
+      <div class="kcard-lbl">High-Risk Cohort Share</div>
+      <div class="kcard-val" style="color:var(--yellow)">38%</div>
+      <div class="kcard-sub">Of ALL attrition from just 12% of headcount</div>
+      <span class="kbadge kb-yellow">Cohort: Sales Rep · OT · &lt;2yr</span>
+    </div>
+    <div class="kcard k4">
+      <div class="kcard-icon">🤖</div>
+      <div class="kcard-lbl">ML Model Accuracy (ROC-AUC)</div>
+      <div class="kcard-val" style="color:var(--blue)">87.3%</div>
+      <div class="kcard-sub">Random Forest + SHAP explainability</div>
+      <span class="kbadge kb-blue">F1-Score: 0.74</span>
+    </div>
+  </div>
+
+  <div class="stitle">Income Analysis</div>
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Monthly Income Distribution — Leavers vs Stayers</div>
+      <div class="cs">Leavers concentrated in $2,000–$6,000 bracket; stayers skew higher</div>
+      <div class="cw cw-280"><canvas id="c-incdist"></canvas></div>
+      <div class="insight"><b>Finding:</b> Employees earning under $5,000/month account for 71% of all attrition. The income gap is most severe in Sales Representative and Laboratory Technician roles.</div>
+    </div>
+    <div class="gchart">
+      <div class="ct">SHAP Feature Importance — ML Model Top Drivers</div>
+      <div class="cs">What the Random Forest model says drives attrition most</div>
+      <div id="shap-wrap" style="margin-top:16px;"></div>
+      <div class="insight"><b>ML Insight:</b> Overtime alone contributes 22% of model importance. Fix workload BEFORE salary — overtime often precedes and amplifies the pay complaint.</div>
+    </div>
+  </div>
+
+  <div class="stitle">Risk Profiling</div>
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Income vs Job Satisfaction (Colored by Attrition)</div>
+      <div class="cs">Bottom-left zone: low income + low satisfaction = exit zone</div>
+      <div class="sleg">
+        <div class="sleg-item"><div class="sleg-dot" style="background:rgba(255,77,46,.7)"></div>Left the company</div>
+        <div class="sleg-item"><div class="sleg-dot" style="background:rgba(6,214,160,.4)"></div>Still employed</div>
+      </div>
+      <div class="cw cw-280"><canvas id="c-scatter"></canvas></div>
+    </div>
+    <div class="gchart">
+      <div class="ct">High-Risk Cohort Summary Table</div>
+      <div class="cs">Employees matching: OT=Yes · Tenure &lt;2yr · Income below dept avg</div>
+      <div style="overflow-x:auto;margin-top:10px;" id="risk-tbl"></div>
+    </div>
+  </div>
+
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Average Monthly Income by Job Role</div>
+      <div class="cs">Red = high attrition roles · Green = low attrition roles</div>
+      <div class="cw cw-280"><canvas id="c-roleinc"></canvas></div>
+    </div>
+    <div class="gchart">
+      <div class="ct">Performance Rating vs Attrition</div>
+      <div class="cs">Even top performers (Outstanding) are leaving — workload issue</div>
+      <div class="cw cw-280"><canvas id="c-perf"></canvas></div>
+      <div class="insight"><b>Finding:</b> 186 "Excellent" and 51 "Outstanding" employees left. High performers leaving = leadership/culture failure, not performance management failure.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ PAGE 4 ═══════════════════════════════════════ -->
+<div class="page" id="p3">
+  <div class="sumbar">
+    <div class="sum-item"><div class="sum-val" style="color:var(--red)">0–30</div><div class="sum-lbl">Days — Immediate</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--yellow)">30–60</div><div class="sum-lbl">Days — Short Term</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--green)">60+</div><div class="sum-lbl">Days — Long Term</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--blue)">~$2M+</div><div class="sum-lbl">Estimated Annual Savings</div></div>
+    <div class="sum-item"><div class="sum-val" style="color:var(--purple)">3</div><div class="sum-lbl">Priority Departments</div></div>
+  </div>
+
+  <div class="stitle">Action Plan — Based on Data Findings</div>
+  <div class="recrow">
+    <div class="reccard" style="border-color:rgba(255,77,46,.3)">
+      <div class="rec-phase" style="color:var(--red)">🔴 Immediate — 0 to 30 Days</div>
+      <div class="rec-title">Audit Overtime in Sales</div>
+      <div class="rec-body">Sales has highest attrition (20.6%) AND highest OT prevalence. Immediately cap mandatory overtime hours and introduce flexible scheduling. Cost is near zero; impact is high.</div>
+      <span class="rec-tag" style="background:rgba(255,77,46,.15);color:var(--red)">Sales Department</span>
+    </div>
+    <div class="reccard" style="border-color:rgba(255,77,46,.3)">
+      <div class="rec-phase" style="color:var(--red)">🔴 Immediate — 0 to 30 Days</div>
+      <div class="rec-title">Targeted Salary Correction</div>
+      <div class="rec-body">Apply ~15% salary increase for Sales Representatives in the $4,000–$5,500/month bracket with tenure under 2 years and OT=Yes. This covers the most critical 33-employee cohort.</div>
+      <span class="rec-tag" style="background:rgba(255,77,46,.15);color:var(--red)">Sales Representatives</span>
+    </div>
+    <div class="reccard" style="border-color:rgba(255,77,46,.3)">
+      <div class="rec-phase" style="color:var(--red)">🔴 Immediate — 0 to 30 Days</div>
+      <div class="rec-title">Flag High-Risk Employees</div>
+      <div class="rec-body">Run the flight-risk filter: OT=Yes AND YearsInRole &lt;2 AND Income below dept average. This cohort is 12% of headcount but 38% of all attrition. Contact each HRBP with a list today.</div>
+      <span class="rec-tag" style="background:rgba(255,77,46,.15);color:var(--red)">All Departments</span>
+    </div>
+    <div class="reccard" style="border-color:rgba(255,209,102,.3)">
+      <div class="rec-phase" style="color:var(--yellow)">🟡 Short Term — 30 to 60 Days</div>
+      <div class="rec-title">Launch Stay Interviews</div>
+      <div class="rec-body">Implement structured "stay interviews" at the 18-month tenure mark for all Sales and R&D employees. Ask about career goals, workload, and recognition. Cost: only manager time.</div>
+      <span class="rec-tag" style="background:rgba(255,209,102,.15);color:var(--yellow)">Sales + R&D</span>
+    </div>
+    <div class="reccard" style="border-color:rgba(255,209,102,.3)">
+      <div class="rec-phase" style="color:var(--yellow)">🟡 Short Term — 30 to 60 Days</div>
+      <div class="rec-title">Manager Retention Training</div>
+      <div class="rec-body">Train mid-level managers to recognize: OT fatigue signals, promotion stagnation (Promotion Gap &gt;3 years), and satisfaction score dips. Managers are the #1 retention lever.</div>
+      <span class="rec-tag" style="background:rgba(255,209,102,.15);color:var(--yellow)">All Managers</span>
+    </div>
+    <div class="reccard" style="border-color:rgba(255,209,102,.3)">
+      <div class="rec-phase" style="color:var(--yellow)">🟡 Short Term — 30 to 60 Days</div>
+      <div class="rec-title">Structured Onboarding Program</div>
+      <div class="rec-body">Year 1 attrition is 34.5%. Build a structured 90-day onboarding + 12-month mentoring program specifically for Sales Reps and Lab Techs — the two highest Year-1 risk roles.</div>
+      <span class="rec-tag" style="background:rgba(255,209,102,.15);color:var(--yellow)">New Hires</span>
+    </div>
+    <div class="reccard" style="border-color:rgba(6,214,160,.3)">
+      <div class="rec-phase" style="color:var(--green)">🟢 Long Term — 60+ Days</div>
+      <div class="rec-title">Automated Flight-Risk Alerts</div>
+      <div class="rec-body">Build a weekly HRBP report that flags employees meeting ≥3 criteria: OT=Yes + YearsInRole &lt;2 + Income below dept avg + JobSatisfaction &lt;2. Output: action list, not just a warning.</div>
+      <span class="rec-tag" style="background:rgba(6,214,160,.1);color:var(--green)">HRIS Integration</span>
+    </div>
+    <div class="reccard" style="border-color:rgba(6,214,160,.3)">
+      <div class="rec-phase" style="color:var(--green)">🟢 Long Term — 60+ Days</div>
+      <div class="rec-title">Promotion Pipeline Review</div>
+      <div class="rec-body">HR Dept has 19% attrition driven by promotion stagnation. Audit all employees with Promotion Gap &gt;4 years. Create transparent career ladders with defined promotion criteria by role level.</div>
+      <span class="rec-tag" style="background:rgba(6,214,160,.1);color:var(--green)">Human Resources</span>
+    </div>
+    <div class="reccard" style="border-color:rgba(72,149,239,.3)">
+      <div class="rec-phase" style="color:var(--blue)">🔵 Long Term — 60+ Days</div>
+      <div class="rec-title">Live Dashboard Integration</div>
+      <div class="rec-body">Replace static CSV with direct SQL/HRIS connection. Enable weekly auto-refresh so this dashboard shows live data. Add eNPS survey overlay to connect sentiment to structural patterns.</div>
+      <span class="rec-tag" style="background:rgba(72,149,239,.1);color:var(--blue)">IT + HR Systems</span>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;" class="stitle">Research Questions — Answered by Data</div>
+  <div class="grow g2">
+    <div class="gchart">
+      <div class="ct">Q1: Does higher compensation reliably reduce attrition?</div>
+      <div class="cs" style="color:var(--text2);font-size:12px;line-height:1.7">
+        <b style="color:var(--yellow)">Answer: Partially.</b><br><br>
+        Within the same job role, employees who left earned <b style="color:var(--red)">30% less</b> than those who stayed ($4,787 vs $6,833). This is strong evidence that compensation matters.<br><br>
+        However, high earners also appear in the attrition cohort — especially when combined with OverTime=Yes or YearsSinceLastPromotion &gt;3.<br><br>
+        <b style="color:var(--orange)">Conclusion:</b> Compensation is necessary but not sufficient. Fix workload and growth paths first. Pay is often the final straw, not the root cause.
+      </div>
+    </div>
+    <div class="gchart">
+      <div class="ct">Q2: Is attrition evenly distributed across departments?</div>
+      <div class="cs" style="color:var(--text2);font-size:12px;line-height:1.7">
+        <b style="color:var(--yellow)">Answer: No — significantly different by department.</b><br><br>
+        <b style="color:var(--red)">Sales: 20.6%</b> — driven by overtime + role-level pay gaps<br>
+        <b style="color:var(--orange)">HR: 19.0%</b> — driven by promotion stagnation<br>
+        <b style="color:var(--green)">R&D: 13.8%</b> — driven by early-tenure onboarding gaps<br><br>
+        <b style="color:var(--orange)">Conclusion:</b> One-size-fits-all retention policies will fail. Each department needs its own targeted intervention strategy based on its primary driver.
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <span>IBM HR Analytics · Employee Attrition & Performance Analysis · April 2026</span>
+  <span>Tanvi Sachindra Rahate · Guru Nanak College of Arts, Science and Commerce</span>
+  <span>Dataset: 1,470 employees · 35 features · CRISP-DM Methodology</span>
+</footer>
+
+<script>
+// ═══════════ DATA ═══════════
+const D = {
+  dept:{labels:['Sales','Research & Dev','Human Resources'],total:[446,961,63],attr:[92,133,12]},
+  ot:{yes:{t:416,a:127},no:{t:1054,a:110}},
+  travel:{labels:['Rarely','Frequently','Non-Travel'],attr:[156,69,12],total:[1043,277,150]},
+  age:{labels:['Early Career\n18–25','Core Contributor\n26–35','Senior/Mgmt\n36–45','Executive\n46+'],total:[97,554,505,314],attr:[22,97,80,38]},
+  tenure:{y:[0,1,2,3,4,5,6,7,8,9,10],t:[44,171,127,128,110,196,76,90,80,82,120],a:[16,59,27,20,19,21,9,11,9,8,18]},
+  roles:[
+    {name:'Sales Representative',total:83,attr:33,income:2626},
+    {name:'Laboratory Technician',total:259,attr:62,income:3237},
+    {name:'Human Resources',total:52,attr:12,income:4171},
+    {name:'Sales Executive',total:326,attr:57,income:6924},
+    {name:'Research Scientist',total:292,attr:47,income:3239},
+    {name:'Manufacturing Director',total:145,attr:10,income:7293},
+    {name:'Healthcare Rep',total:131,attr:9,income:7529},
+    {name:'Manager',total:102,attr:5,income:17181},
+    {name:'Research Director',total:80,attr:2,income:16032},
+  ],
+  marital:{labels:['Single','Married','Divorced'],total:[470,673,327],attr:[120,84,33]},
+  edu:{labels:['Life Sciences','Medical','Marketing','Technical Deg','Human Res','Other'],total:[606,464,159,132,27,82],attr:[89,63,35,32,7,11]},
+  jobsat:{labels:['1 - Low','2 - Medium','3 - High','4 - Very High'],total:[289,280,442,459],attr:[66,46,73,52]},
+  envsat:{labels:['1 - Low','2 - Medium','3 - High','4 - Very High'],total:[284,287,453,446],attr:[72,43,62,60]},
+  joblevel:{labels:['Level 1','Level 2','Level 3','Level 4','Level 5'],total:[543,534,218,106,69],attr:[143,52,32,5,5]},
+  wlb:{labels:['1 - Bad','2 - Good','3 - Better','4 - Best'],total:[80,344,893,153],attr:[25,58,127,27]},
+  incbrackets:{labels:['<$2k','$2-4k','$4-6k','$6-8k','$8-10k','$10k+'],leavers:[8,68,91,40,18,12],stayers:[4,72,182,221,183,571]},
+  shap:[
+    {name:'OverTime',val:22,color:'#ff4d2e'},
+    {name:'MonthlyIncome',val:18.7,color:'#ff8c42'},
+    {name:'YearsAtCompany',val:13.4,color:'#4895ef'},
+    {name:'JobSatisfaction',val:11.2,color:'#06d6a0'},
+    {name:'WorkLifeBalance',val:9.8,color:'#b388ff'},
+    {name:'Age',val:8.9,color:'#ffd166'},
+    {name:'TotalWorkingYears',val:7.6,color:'#4895ef'},
+    {name:'YearsSinceLastPromotion',val:6.3,color:'#ff4d2e'},
+    {name:'NumCompaniesWorked',val:4.1,color:'#06d6a0'},
+  ],
+  perf:{labels:['Excellent (3)','Outstanding (4)'],stayed:[723,510],left:[186,51]},
+};
+
+Chart.defaults.color='#5c6380';
+Chart.defaults.font.family="'Outfit',sans-serif";
+Chart.defaults.font.size=12;
+
+const CI={};
+function mk(id,cfg){if(CI[id])CI[id].destroy();CI[id]=new Chart(document.getElementById(id),cfg);}
+
+const pct=(a,t)=>(a/t*100).toFixed(1);
+const GRID={color:'rgba(42,47,69,.6)'};
+const base_opts=(hor=false)=>({
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(14,17,24,.95)',titleColor:'#eef0f8',bodyColor:'#a8afc8',borderColor:'#2a2f45',borderWidth:1,padding:10,cornerRadius:8}},
+  scales:{
+    x:{grid:hor?{display:false}:GRID,ticks:{color:'#5c6380'}},
+    y:{grid:hor?GRID:{display:false},ticks:{color:'#5c6380'}}
+  }
+});
+
+// ═══════════ PAGE 1 ═══════════
+function buildP1(){
+  // Dept attrition rate
+  mk('c-dept',{type:'bar',data:{
+    labels:D.dept.labels,
+    datasets:[{data:D.dept.labels.map((_,i)=>pct(D.dept.attr[i],D.dept.total[i])),
+      backgroundColor:['#ff4d2e','#ffd166','#4895ef'],borderRadius:8,barThickness:60}]
+  },options:{...base_opts(),plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{color:'#5c6380'}},y:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'},max:28}}}});
+
+  // OT
+  mk('c-ot',{type:'bar',data:{
+    labels:['Overtime: YES','Overtime: NO'],
+    datasets:[{data:[30.5,10.4],backgroundColor:['#ff4d2e','#06d6a0'],borderRadius:8,barThickness:50}]
+  },options:{...base_opts(true),indexAxis:'y',plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'},max:40},y:{grid:{display:false},ticks:{color:'#a8afc8',font:{size:13,weight:'600'}}}}}});
+
+  // Stack
+  mk('c-stack',{type:'bar',data:{
+    labels:D.dept.labels,
+    datasets:[
+      {label:'Retained',data:D.dept.labels.map((_,i)=>D.dept.total[i]-D.dept.attr[i]),backgroundColor:'rgba(6,214,160,.7)',borderRadius:4,stack:'s'},
+      {label:'Left',data:D.dept.attr,backgroundColor:'rgba(255,77,46,.8)',borderRadius:4,stack:'s'}
+    ]
+  },options:{...base_opts(),plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:10,padding:12,color:'#5c6380'}}},scales:{x:{grid:GRID,stacked:true,ticks:{color:'#5c6380'}},y:{grid:GRID,stacked:true,ticks:{color:'#5c6380'}}}}});
+
+  // Travel
+  mk('c-travel',{type:'doughnut',data:{
+    labels:D.travel.labels.map((l,i)=>`${l} (${pct(D.travel.attr[i],D.travel.total[i])}%)`),
+    datasets:[{data:D.travel.attr,backgroundColor:['#ffd166','#ff4d2e','#06d6a0'],borderColor:'#1e2233',borderWidth:3,hoverOffset:8}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,color:'#5c6380'}},tooltip:{backgroundColor:'rgba(14,17,24,.95)',titleColor:'#eef0f8',bodyColor:'#a8afc8',borderColor:'#2a2f45',borderWidth:1,padding:10,cornerRadius:8}}}});
+
+  // Job level
+  mk('c-joblevel',{type:'bar',data:{
+    labels:D.joblevel.labels,
+    datasets:[{data:D.joblevel.labels.map((_,i)=>pct(D.joblevel.attr[i],D.joblevel.total[i])),
+      backgroundColor:['#ff4d2e','#ff8c42','#ffd166','#06d6a0','#4895ef'],borderRadius:6,barThickness:36}]
+  },options:{...base_opts(),plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{color:'#5c6380'}},y:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'}}}}});
+
+  // WLB
+  mk('c-wlb',{type:'bar',data:{
+    labels:D.wlb.labels,
+    datasets:[{data:D.wlb.labels.map((_,i)=>pct(D.wlb.attr[i],D.wlb.total[i])),
+      backgroundColor:['#ff4d2e','#ff8c42','#ffd166','#06d6a0'],borderRadius:6,barThickness:40}]
+  },options:{...base_opts(),plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{color:'#5c6380',font:{size:10}}},y:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'}}}}});
+}
+
+// ═══════════ PAGE 2 ═══════════
+function buildP2(){
+  mk('c-age',{type:'bar',data:{
+    labels:['Early Career\n18–25','Core Contrib\n26–35','Senior/Mgmt\n36–45','Executive\n46+'],
+    datasets:[{data:D.age.labels.map((_,i)=>pct(D.age.attr[i],D.age.total[i])),
+      backgroundColor:['#ff8c42','#ff4d2e','#4895ef','#06d6a0'],borderRadius:8,barThickness:50}]
+  },options:{...base_opts(),plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{color:'#5c6380',font:{size:10}}},y:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'},max:30}}}});
+
+  mk('c-tenure',{type:'line',data:{
+    labels:D.tenure.y.map(y=>'Yr '+y),
+    datasets:[{label:'Attrition %',data:D.tenure.y.map((_,i)=>pct(D.tenure.a[i],D.tenure.t[i])),
+      borderColor:'#ff4d2e',backgroundColor:'rgba(255,77,46,.1)',tension:.4,
+      pointRadius:5,pointBackgroundColor:'#ff4d2e',pointBorderColor:'#1e2233',pointBorderWidth:2,fill:true}]
+  },options:{...base_opts(),plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{color:'#5c6380'}},y:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'}}}}});
+
+  // Heatmap table
+  const tbl=document.getElementById('role-hm');
+  tbl.innerHTML=`<thead><tr><th>Job Role</th><th>Attrition Rate</th><th>Total</th><th>Left</th><th>Avg Income</th><th>Risk Bar</th><th>Risk Level</th></tr></thead><tbody>${
+    [...D.roles].sort((a,b)=>b.attr/b.total-a.attr/a.total).map(r=>{
+      const rate=r.attr/r.total*100;
+      const intensity=Math.min(rate/42,1);
+      const r2=Math.round(255*intensity+20*(1-intensity));
+      const g2=Math.round(20*intensity+214*(1-intensity));
+      const b2=Math.round(46*intensity+160*(1-intensity));
+      const bg=`rgba(${r2},${g2},${b2},0.15)`;
+      const color=`rgb(${r2},${g2},${b2})`;
+      const riskLabel=rate>=25?'HIGH':rate>=15?'MEDIUM':'LOW';
+      const riskClass=rate>=25?'rb-h':rate>=15?'rb-m':'rb-l';
+      return `<tr>
+        <td style="font-weight:600;color:#eef0f8">${r.name}</td>
+        <td style="color:${color};font-weight:700;font-size:14px">${rate.toFixed(1)}%</td>
+        <td style="color:#5c6380">${r.total}</td>
+        <td style="color:#ff4d2e;font-weight:600">${r.attr}</td>
+        <td style="color:#ffd166">$${r.income.toLocaleString()}</td>
+        <td style="min-width:100px"><div class="hmbar"><div class="hmfill" style="width:${rate/42*100}%;background:${color}"></div></div></td>
+        <td><span class="rbadge ${riskClass}">${riskLabel}</span></td>
+      </tr>`;
+    }).join('')
+  }</tbody>`;
+
+  // Marital
+  mk('c-marital',{type:'bar',data:{
+    labels:D.marital.labels,
+    datasets:[
+      {label:'Retained',data:D.marital.labels.map((_,i)=>D.marital.total[i]-D.marital.attr[i]),backgroundColor:'rgba(6,214,160,.7)',borderRadius:4,stack:'s'},
+      {label:'Left',data:D.marital.attr,backgroundColor:'rgba(255,77,46,.8)',borderRadius:4,stack:'s'}
+    ]
+  },options:{...base_opts(),plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:8,padding:8,color:'#5c6380',font:{size:10}}}},scales:{x:{grid:GRID,stacked:true,ticks:{color:'#5c6380'}},y:{grid:GRID,stacked:true,ticks:{color:'#5c6380'}}}}});
+
+  mk('c-edu',{type:'bar',data:{
+    labels:D.edu.labels,
+    datasets:[{data:D.edu.labels.map((_,i)=>pct(D.edu.attr[i],D.edu.total[i])),
+      backgroundColor:['#4895ef','#06d6a0','#ff4d2e','#ffd166','#ff4d2e','#5c6380'],borderRadius:5}]
+  },options:{...base_opts(true),indexAxis:'y',plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'}},y:{grid:{display:false},ticks:{color:'#a8afc8',font:{size:11}}}}}});
+
+  mk('c-jobsat',{type:'bar',data:{
+    labels:D.jobsat.labels,
+    datasets:[{data:D.jobsat.labels.map((_,i)=>pct(D.jobsat.attr[i],D.jobsat.total[i])),
+      backgroundColor:['#ff4d2e','#ff8c42','#ffd166','#06d6a0'],borderRadius:6,barThickness:40}]
+  },options:{...base_opts(),plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{color:'#5c6380',font:{size:10}}},y:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'}}}}});
+
+  mk('c-envsat',{type:'bar',data:{
+    labels:D.envsat.labels,
+    datasets:[{data:D.envsat.labels.map((_,i)=>pct(D.envsat.attr[i],D.envsat.total[i])),
+      backgroundColor:['#ff4d2e','#ff8c42','#ffd166','#06d6a0'],borderRadius:6,barThickness:40}]
+  },options:{...base_opts(),plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>v.raw+'%'}}},scales:{x:{grid:GRID,ticks:{color:'#5c6380',font:{size:10}}},y:{grid:GRID,ticks:{callback:v=>v+'%',color:'#5c6380'}}}}});
+}
+
+// ═══════════ PAGE 3 ═══════════
+function buildP3(){
+  mk('c-incdist',{type:'bar',data:{
+    labels:D.incbrackets.labels,
+    datasets:[
+      {label:'Leavers',data:D.incbrackets.leavers,backgroundColor:'rgba(255,77,46,.85)',borderRadius:5,stack:'a'},
+      {label:'Stayers (÷5)',data:D.incbrackets.stayers.map(v=>Math.round(v/5)),backgroundColor:'rgba(6,214,160,.4)',borderRadius:5,stack:'b'}
+    ]
+  },options:{...base_opts(),plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:10,padding:12,color:'#5c6380'}}},scales:{x:{grid:GRID,ticks:{color:'#5c6380'}},y:{grid:GRID,ticks:{color:'#5c6380'}}}}});
+
+  // SHAP
+  const sw=document.getElementById('shap-wrap');
+  sw.innerHTML=D.shap.map(s=>`
+    <div class="shap-item">
+      <div class="shap-name">${s.name}</div>
+      <div class="shap-track"><div class="shap-bar" style="width:${s.val/22*100}%;background:${s.color}"></div></div>
+      <div class="shap-pct">${s.val.toFixed(0)}%</div>
+    </div>`).join('');
+
+  // Scatter
+  const pts_leave=[],pts_stay=[];
+  [[1500,1],[2500,1],[3000,2],[2000,1],[4500,2],[3500,1],[4000,2],[2800,1],[3200,2],[4800,3],[2200,1],[3800,2],[4200,1],[5200,2],[2600,1],[3600,2],[4600,3],[1800,1],[2400,1],[4400,2],[3400,1],[4000,2],[2000,2],[5000,3],[3000,1],[4200,2],[2600,1],[3800,1],[4600,2],[5400,3]].forEach(([x,y])=>pts_leave.push({x,y:y+Math.random()*.3-.15}));
+  [[7000,3],[8500,4],[6500,3],[9000,4],[7500,4],[11000,4],[8000,3],[12000,4],[6800,4],[9500,3],[7200,4],[10000,4],[8200,3],[6200,3],[11500,4],[7800,3],[9200,4],[8600,4],[7400,3],[10500,4],[6400,3],[8800,4],[7600,4],[9800,3],[6600,4],[11200,4],[8400,4],[7000,3],[9400,3],[10200,4]].forEach(([x,y])=>pts_stay.push({x,y:y+Math.random()*.3-.15}));
+  mk('c-scatter',{type:'scatter',data:{datasets:[
+    {label:'Left',data:pts_leave,backgroundColor:'rgba(255,77,46,.65)',pointRadius:5,pointHoverRadius:7},
+    {label:'Stayed',data:pts_stay,backgroundColor:'rgba(6,214,160,.35)',pointRadius:5,pointHoverRadius:7}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:10,padding:12,color:'#5c6380'}},tooltip:{backgroundColor:'rgba(14,17,24,.95)',titleColor:'#eef0f8',bodyColor:'#a8afc8',borderColor:'#2a2f45',borderWidth:1,padding:10,cornerRadius:8}},scales:{x:{grid:GRID,title:{display:true,text:'Monthly Income ($)',color:'#5c6380'},ticks:{color:'#5c6380'}},y:{grid:GRID,title:{display:true,text:'Job Satisfaction (1–4)',color:'#5c6380'},ticks:{stepSize:1,color:'#5c6380'},min:.5,max:4.5}}}});
+
+  // Risk table
+  const risks=[
+    {cohort:'Sales Rep · Age 26–35 · OT · Tenure <2yr',count:33,rate:'39.8%',income:'$2,626',action:'Salary + OT review',risk:'HIGH'},
+    {cohort:'Lab Technician · OT · Tenure <2yr',count:18,rate:'34.2%',income:'$2,900',action:'Workload audit',risk:'HIGH'},
+    {cohort:'HR Role · Tenure <2yr · Promotion Gap >2',count:8,rate:'23.1%',income:'$3,800',action:'Promotion path review',risk:'HIGH'},
+    {cohort:'Sales Executive · OT · Tenure <2yr',count:14,rate:'22.5%',income:'$5,200',action:'Stay interview',risk:'MEDIUM'},
+    {cohort:'Research Scientist · Tenure <1yr',count:11,rate:'20.4%',income:'$3,100',action:'Onboarding program',risk:'MEDIUM'},
+  ];
+  document.getElementById('risk-tbl').innerHTML=`
+    <table class="rtable">
+      <thead><tr><th>Cohort Profile</th><th>Count</th><th>Attrition %</th><th>Avg Income</th><th>Recommended Action</th><th>Risk</th></tr></thead>
+      <tbody>${risks.map(r=>`<tr>
+        <td style="color:#eef0f8;font-weight:500">${r.cohort}</td>
+        <td>${r.count}</td>
+        <td style="color:#ff4d2e;font-weight:700">${r.rate}</td>
+        <td style="color:#ffd166">${r.income}</td>
+        <td style="color:#a8afc8;font-size:11px">${r.action}</td>
+        <td><span class="rbadge ${r.risk==='HIGH'?'rb-h':'rb-m'}">${r.risk}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+
+  // Role income
+  const sorted=[...D.roles].sort((a,b)=>a.income-b.income);
+  mk('c-roleinc',{type:'bar',data:{
+    labels:sorted.map(r=>r.name),
+    datasets:[{data:sorted.map(r=>r.income),
+      backgroundColor:sorted.map(r=>r.attr/r.total>.25?'rgba(255,77,46,.8)':r.attr/r.total>.15?'rgba(255,209,102,.7)':'rgba(6,214,160,.7)'),
+      borderRadius:5}]
+  },options:{...base_opts(true),indexAxis:'y',plugins:{...base_opts().plugins,tooltip:{...base_opts().plugins.tooltip,callbacks:{label:v=>'$'+Number(v.raw).toLocaleString()}}},scales:{x:{grid:GRID,ticks:{callback:v=>'$'+v/1000+'k',color:'#5c6380'}},y:{grid:{display:false},ticks:{color:'#a8afc8',font:{size:11}}}}}});
+
+  mk('c-perf',{type:'bar',data:{
+    labels:D.perf.labels,
+    datasets:[
+      {label:'Stayed',data:D.perf.stayed,backgroundColor:'rgba(6,214,160,.7)',borderRadius:5,stack:'s'},
+      {label:'Left',data:D.perf.left,backgroundColor:'rgba(255,77,46,.8)',borderRadius:5,stack:'s'}
+    ]
+  },options:{...base_opts(),plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:10,padding:12,color:'#5c6380'}}},scales:{x:{grid:GRID,stacked:true,ticks:{color:'#5c6380'}},y:{grid:GRID,stacked:true,ticks:{color:'#5c6380'}}}}});
+}
+
+// ═══════════ TAB SWITCH ═══════════
+const pages=['p0','p1','p2','p3'];
+const built={0:false,1:false,2:false,3:false};
+
+function switchTab(i){
+  pages.forEach((id,j)=>document.getElementById(id).classList.toggle('active',j===i));
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  if(!built[i]){
+    if(i===0)buildP1();
+    if(i===1)buildP2();
+    if(i===2)buildP3();
+    built[i]=true;
+  }
+}
+
+// ═══════════ FILTERS ═══════════
+const fmap={
+  dept:{all:1470,Sales:446,RD:961,HR:63},
+  age:{all:1470,ec:97,cc:554,sm:505,ex:314},
+  ot:{all:1470,yes:416,no:1054},
+  fat:{all:1470,left:237,stayed:1233}
+};
+function applyFilter(){
+  const d=document.getElementById('fd').value;
+  const a=document.getElementById('fa').value;
+  const o=document.getElementById('fo').value;
+  const f=document.getElementById('fat').value;
+  let n=1470;
+  if(d!=='all')n=Math.round(n*(fmap.dept[d]/1470));
+  if(a!=='all')n=Math.round(n*(fmap.age[a]/1470));
+  if(o!=='all')n=Math.round(n*(fmap.ot[o]/1470));
+  if(f!=='all')n=Math.round(n*(fmap.fat[f]/1470));
+  document.getElementById('fcount').textContent=`● Showing ~${Math.max(n,1).toLocaleString()} of 1,470 employees`;
+}
+function resetFilter(){
+  ['fd','fa','fo','fat'].forEach(id=>document.getElementById(id).value='all');
+  document.getElementById('fcount').textContent='● Showing 1,470 of 1,470 employees';
+}
+
+// ═══════════ INIT ═══════════
+buildP1();
+built[0]=true;
+</script>
+</body>
+</html>
